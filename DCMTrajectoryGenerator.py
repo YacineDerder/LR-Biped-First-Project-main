@@ -1,3 +1,4 @@
+from cmath import exp
 import numpy as np
 import math
 from matplotlib import pyplot as plt
@@ -31,6 +32,15 @@ class DCMTrajectoryGenerator:
         #todo: Use equation (3) in jupyter notebook to update "self.CoMDot" array
         #todo: Use numerical integration(for example a simple euler method) for filling the "self.CoM" array
         #Note: that "self.CoM" should be a 3d vector that third component is constant CoM height
+
+        totalTimeSteps = self.numberOfSteps*self.stepDuration*self.numberOfSamplesPerSecond
+
+        self.CoM[0][2] = self.CoMHeight
+        for i in range(totalTimeSteps - 1):
+            self.CoMDot[i] = self.omega*(self.DCM[i] - self.CoM[i])
+            self.CoM[i+1] = self.CoM[i] + self.timeStep*self.CoMDot[i]
+            self.CoM[i+1][2] = self.CoMHeight
+        self.CoMDot[totalTimeSteps-1] = self.omega*(self.DCM[totalTimeSteps-1] - self.CoM[totalTimeSteps-1])
         
         return self.CoM
 
@@ -48,6 +58,8 @@ class DCMTrajectoryGenerator:
         #todo: implement capturability constraint(3rd item of jupyter notebook steps for DCM motion planning section)
         #todo: Use equation 7 for finding DCM at the end of step and update the "self.DCMForEndOfStep" array  
            
+        for i in range(self.numberOfSteps-2, -1, -1):        # Start at (N-2) because eps(N-1) = CoP(N-1)
+            self.DCMForEndOfStep[i] = self.CoP[i+1] + (self.DCMForEndOfStep[i+1] - self.CoP[i+1])*exp(-self.omega*self.stepDuration)
            
         pass
 
@@ -59,6 +71,11 @@ class DCMTrajectoryGenerator:
         #todo: Implement numerical differentiation for finding DCM Velocity and update the "self.DCMVelocity" array
         #todo: Use equation (10) to find CoP by having DCM and DCM Velocity and update the "self.CoPTrajectory" array
 
+        totalTimeSteps = self.numberOfSteps*self.stepDuration*self.numberOfSamplesPerSecond
+
+        for i in range(totalTimeSteps):
+            self.DCMVelocity[i] = (self.DCMForEndOfStep[i+1] - self.DCMForEndOfStep[i])/self.stepDuration
+            self.CoPTrajectory[i] = 0 # TODO
 
         pass
 
